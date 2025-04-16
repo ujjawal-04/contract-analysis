@@ -12,7 +12,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { AnimatePresence, motion } from "framer-motion";
-import { FileText, Sparkles, Trash, AlertCircle, CheckCircle, ExternalLink, X } from "lucide-react";
+import { FileText, Sparkles, Trash, AlertCircle, CheckCircle, ExternalLink, X, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { useRouter } from "next/navigation";
@@ -182,22 +182,22 @@ export function UploadModal({
                             <div {...getRootProps()} className={cn("border-2 border-dashed rounded-lg p-8 mt-8 mb-4 text-center transition-colors",
                                 isDragActive
                                 ? "border-primary bg-primary/10"
-                                : "border-gray-300 hover:border-gray-400"
+                                : "border-blue-600 hover:border-blue-700"
                             )}
                             >
                                 <input {...getInputProps()} />
                                 <motion.div>
-                                    <FileText className="mx-auto size-16 text-primary"/>
+                                    <FileText className="mx-auto size-16 text-blue-600"/>
                                 </motion.div>
                                 <p className="mt-4 text-sm text-gray-600">
                                     Drag &apos;n&apos; drop some files here, or click to select files.
                                 </p>
-                                <p className="bg-yellow-500/30 border border-yellow-500 text-yellow-700 p-2 rounded mt-2">
+                                <p className="bg-yellow-500/30 border border-yellow-100 text-yellow-200 p-2 rounded mt-2">
                                  Note: Only PDF files are accepted.
                                 </p>
                             </div>
                             {files.length > 0 && (
-                                <div className="mt-4 bg-green-500/30 border border-green-500 text-green-700 p-2 rounded flex items-center justify-between">
+                                <div className="mt-4 bg-blue-200 border border-gray-500 text-gray-900 p-2 rounded flex items-center justify-between">
                                     <span>
                                         {files[0].name}{" "}
                                         <span className="text-sm text-gray-600">
@@ -207,16 +207,15 @@ export function UploadModal({
                                     <Button 
                                         variant="ghost" 
                                         size="sm" 
-                                        className="hover:bg-green-500/20" 
                                         onClick={handleRemoveFile}
                                     >
-                                        <Trash className="size-5 hover:text-red-600"/>
+                                        <Trash className="size-5 text-red-500 hover:text-red-600"/>
                                     </Button>
                                 </div>
                             )}
                             {files.length > 0 && (
                                 <Button 
-                                    className="mt-4 w-full mb-4" 
+                                    className="mt-4 w-full mb-4 bg-blue-600 hover:bg-blue-700" 
                                     onClick={handleFileUpload}
                                     disabled={isProcessing}
                                 >
@@ -227,26 +226,54 @@ export function UploadModal({
                         </motion.div>
                     </AnimatePresence>
                 );
-            case "detecting":
-                return (
-                    <AnimatePresence>
-                        <motion.div
-                        initial={{ opacity:0, scale:0.9 }}
-                        animate={{ opacity:1, scale:1 }}
-                        exit={{ opacity:0, scale:0.9 }}
-                        >
-                            <div className="py-8 text-center">
-                                <div className="animate-pulse mb-4">
-                                    <Sparkles className="mx-auto size-16 text-primary"/>
+                case "detecting":
+                    return (
+                        <AnimatePresence>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                            >
+                                <div className="py-8 text-center">
+                                    <motion.div
+                                        animate={{
+                                            rotate: [0, 360],
+                                            scale: [1, 1.2, 1],
+                                        }}
+                                        transition={{
+                                            duration: 2,
+                                            repeat: Infinity,
+                                            ease: "linear",
+                                        }}
+                                        className="mb-4"
+                                    >
+                                        <Brain className="mx-auto size-16 text-blue-700" />
+                                    </motion.div>
+                
+                                    <h3 className="text-lg font-medium">Detecting Contract Type...</h3>
+                                    <p className="text-sm text-gray-500 mt-2">
+                                        Our AI is analyzing your document to determine the contract type.
+                                    </p>
+                
+                                    {/* Loader container */}
+                                    <div className="relative w-48 h-2 mt-6 mx-auto bg-blue-100 rounded-full overflow-hidden">
+                                        {/* Animated loader bar */}
+                                        <motion.div
+                                            className="absolute left-0 top-0 h-full bg-blue-600 rounded-full"
+                                            initial={{ x: "-100%" }}
+                                            animate={{ x: "100%" }}
+                                            transition={{
+                                                duration: 1.5,
+                                                repeat: Infinity,
+                                                ease: "easeInOut",
+                                            }}
+                                            style={{ width: "50%" }}
+                                        />
+                                    </div>
                                 </div>
-                                <h3 className="text-lg font-medium">Detecting Contract Type...</h3>
-                                <p className="text-sm text-gray-500 mt-2">
-                                    Our AI is analyzing your document to determine the contract type.
-                                </p>
-                            </div>
-                        </motion.div>
-                    </AnimatePresence>
-                );
+                            </motion.div>
+                        </AnimatePresence>
+                    );                
             case "confirm":
                 return (
                     <AnimatePresence>
@@ -263,18 +290,18 @@ export function UploadModal({
                                     </DialogDescription>
                                 </DialogHeader>
                                 
-                                <div className="my-6 p-4 bg-green-500/20 border border-green-500 rounded-lg">
+                                <div className="my-6 p-4 bg-blue-500/10 border border-blue-500 rounded-lg">
                                     <h3 className="font-bold text-lg">{detectedType}</h3>
-                                    <p className="text-sm text-gray-600 mt-2">
+                                </div>
+                                <p className="text-sm text-gray-600 mt-2 mb-4">
                                         Would you like to proceed with the analysis?
                                     </p>
-                                </div>
                                 
                                 <div className="flex gap-2 justify-end">
                                     <Button variant="outline" onClick={() => setStep("upload")}>
                                         Back
                                     </Button>
-                                    <Button onClick={handleAnalyzeContract}>
+                                    <Button onClick={handleAnalyzeContract} className="bg-blue-600 hover:bg-blue-700">
                                         <Sparkles className="mr-2 size-4" />
                                         Analyze Now
                                     </Button>
@@ -283,64 +310,95 @@ export function UploadModal({
                         </motion.div>
                     </AnimatePresence>
                 );
-            case "processing":
-                return (
-                    <AnimatePresence>
-                        <motion.div
-                        initial={{ opacity:0, scale:0.9 }}
-                        animate={{ opacity:1, scale:1 }}
-                        exit={{ opacity:0, scale:0.9 }}
-                        className="flex flex-col items-center justify-center py-8">
-                            <div className="py-8 text-center">
-                                <div className="animate-pulse mb-4">
-                                    <Sparkles className="mx-auto size-16 text-primary"/>
-                                </div>
-                                <h3 className="text-lg font-medium">Analyzing your contract...</h3>
-                                <p className="text-sm text-gray-500 mt-2">
-                                    Our AI is analyzing the details of your {detectedType} contract.
-                                </p>
-                            </div>
-                        </motion.div>
-                    </AnimatePresence>
-                );
-            case "done":
-                return (
-                    <AnimatePresence>
-                        <motion.div
-                        initial={{ opacity:0, scale:0.9 }}
-                        animate={{ opacity:1, scale:1 }}
-                        exit={{ opacity:0, scale:0.9 }}
-                        className="flex flex-col items-center justify-center">
-                            <div className="py-6 text-center">
-                                <div className="mb-4">
-                                    <CheckCircle className="mx-auto size-16 text-green-500"/>
-                                </div>
-                                <h3 className="text-xl font-medium text-green-700">Analysis Completed!</h3>
-                                <p className="text-sm text-gray-600 mt-2 mb-6">
-                                    Your {detectedType} contract has been successfully analyzed. You can now view the detailed results.
-                                </p>
-                                
-                                <div className="flex gap-3 mt-4">
-                                    <Button 
-                                        variant="outline" 
-                                        onClick={handleClose}
-                                        className="flex-1"
+                case "processing":
+                    return (
+                        <AnimatePresence>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className="flex flex-col items-center justify-center py-8"
+                            >
+                                <div className="py-8 text-center">
+                                    {/* Rotating and scaling Brain icon */}
+                                    <motion.div
+                                        animate={{
+                                            rotate: [0, 360],
+                                            scale: [1, 1.2, 1],
+                                        }}
+                                        transition={{
+                                            duration: 2,
+                                            repeat: Infinity,
+                                            ease: "linear",
+                                        }}
+                                        className="mb-4"
                                     >
-                                        <X className="mr-2 size-4" />
-                                        Close
-                                    </Button>
-                                    <Button 
-                                        onClick={handleViewResults}
-                                        className="flex-1 bg-green-600 hover:bg-green-700"
-                                    >
-                                        <ExternalLink className="mr-2 size-4" />
-                                        View Results
-                                    </Button>
+                                        <Brain className="mx-auto size-16 text-blue-700" />
+                                    </motion.div>
+                
+                                    <h3 className="text-lg font-medium">Analyzing your contract...</h3>
+                                    <p className="text-sm text-gray-500 mt-2">
+                                        Our AI is analyzing the details of your <span className="font-semibold">{detectedType}</span> contract.
+                                    </p>
+                
+                                    {/* Sliding loader bar */}
+                                    <div className="relative w-48 h-2 mt-6 mx-auto bg-blue-100 rounded-full overflow-hidden">
+                                        <motion.div
+                                            className="absolute left-0 top-0 h-full bg-blue-600 rounded-full"
+                                            initial={{ x: "-100%" }}
+                                            animate={{ x: "100%" }}
+                                            transition={{
+                                                duration: 1.5,
+                                                repeat: Infinity,
+                                                ease: "easeInOut",
+                                            }}
+                                            style={{ width: "50%" }}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                        </motion.div>
-                    </AnimatePresence>
-                );
+                            </motion.div>
+                        </AnimatePresence>
+                    );                
+                    case "done":
+                        return (
+                            <AnimatePresence>
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    className="flex items-center justify-center"
+                                >
+                                    <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6 text-center relative">
+                                        {/* Dashed border highlight */}
+                                        <div className="border-2 border-dashed border-blue-500 rounded-lg p-6 mb-6">
+                                            <CheckCircle className="mx-auto size-14 text-blue-600 mb-3" />
+                                            <h3 className="text-xl font-semibold text-blue-700">Success!</h3>
+                                            <p className="text-sm text-gray-600 mt-2">
+                                                Your contract has been analyzed successfully by our AI. You can now view the results.
+                                            </p>
+                                        </div>
+                    
+                                        {/* Button group */}
+                                        <div className="flex flex-col gap-3">
+                                            <Button
+                                                onClick={handleViewResults}
+                                                className="bg-blue-600 hover:bg-blue-700 text-white w-full text-sm"
+                                            >
+                                                <Sparkles className="mr-2 size-4" />
+                                                View AI Analysis Results
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={handleClose}
+                                                className="w-full text-sm border-blue-300"
+                                            >
+                                                Close
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </AnimatePresence>
+                        );                    
             default:
                 return null;
         }

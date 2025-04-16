@@ -6,7 +6,7 @@ import { ColumnDef, flexRender, getCoreRowModel, getPaginationRowModel, getSorte
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { MoreHorizontal, Table as TableIcon } from "lucide-react";
+import { MoreHorizontal, Users, BarChart3, AlertTriangle, ArrowUp, ArrowDown, Filter } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { UploadModal } from "../modals/upload-modal";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,7 @@ import {
   AlertDialogTitle, 
   AlertDialogTrigger 
 } from "../ui/alert-dialog";
+import { Input } from "../ui/input";
 
 export default function UserContracts() {
     const { data: contracts, refetch } = useQuery<ContractAnalysis[]>({
@@ -53,7 +54,11 @@ export default function UserContracts() {
         {
             accessorKey: "_id",
             header: ({ column }) => {
-                return <Button variant="ghost">Contract Id</Button>
+                return <div className="flex items-center">
+                  <span className="font-medium">Contract id</span>
+                  <span className="ml-2">
+                  </span>
+                </div>
             },
             cell: ({ row }) => {
                 return (
@@ -91,7 +96,7 @@ export default function UserContracts() {
         },
         {
             accessorKey: "contractType",
-            header: "Contract Type",
+            header: "Contract type",
             cell: ({ row }) => {
                const contractType = row.getValue("contractType") as string;
                const colorClass =
@@ -101,6 +106,7 @@ export default function UserContracts() {
         },
       {
         id: "actions",
+        header: "Actions",
         cell: ({ row }) => {
         const contract = row.original;
 
@@ -139,25 +145,28 @@ export default function UserContracts() {
               </DropdownMenuContent>
             </DropdownMenu>
             
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
+            <AlertDialogContent className="border border-gray-200 p-0 overflow-hidden">
+              <AlertDialogHeader className="bg-gray-50 p-6 border-b border-gray-200">
+                <AlertDialogTitle className="text-xl font-bold text-slate-800">Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription className="text-slate-600 mt-2">
                   This action cannot be undone. This will permanently delete your contract
                   and remove your data from our servers.
                 </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogFooter className="p-4 bg-gray-50 border-gray-200">
+                <AlertDialogCancel className="border-gray-200 text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </AlertDialogCancel>
                 <AlertDialogAction 
                   onClick={(e) => {
                     e.preventDefault();
                     handleDeleteClick();
                   }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Continue
                 </AlertDialogAction>
               </AlertDialogFooter>
+              </AlertDialogHeader>
             </AlertDialogContent>
           </AlertDialog>
         );
@@ -192,127 +201,167 @@ export default function UserContracts() {
     ).length ?? 0;
 
     return ( 
-    <div className="container mx-auto p-6 space-y-8">
-        <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">
-        Your Contracts
-        </h1>
-        <Button onClick={ () => setIsUploadModalOpen(true)}>
-            New Contract
-        </Button>
-        </div>
+      <div className="bg-white w-full">
+        <div className="max-w-[1400px] mx-auto p-6">
+          <div className="mb-8 flex justify-between">
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <Button onClick={() => setIsUploadModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+                New Contract
+              </Button>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                    Total Contracts
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">
-                       {totalContracts}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            {/* Total Contracts Card */}
+            <Card className="shadow-sm border border-gray-100 rounded-lg">
+              <CardContent className="p-6 flex items-center">
+                <div className="h-16 w-16 bg-indigo-50 rounded-full flex items-center justify-center mr-4">
+                  <Users className="h-8 w-8 text-indigo-500" />
+                </div>
+                <div>
+                  <div className="text-3xl font-bold flex items-center gap-2">
+                    {totalContracts} 
+                    <div className="flex items-center text-green-500 text-sm font-normal">
                     </div>
-                </CardContent>
+                  </div>
+                  <div className="text-gray-500">Total Contracts</div>
+                </div>
+              </CardContent>
             </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                        Average Score
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">
-                       {averageScore.toFixed(2)}
-                    </div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                        High Risk Contracts
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">
-                       {highRiskContracts}
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
 
-            <div className="rounded-md border">
+            {/* Average Score Card */}
+            <Card className="shadow-sm border border-gray-100 rounded-lg">
+              <CardContent className="p-6 flex items-center">
+                <div className="h-16 w-16 bg-orange-50 rounded-full flex items-center justify-center mr-4">
+                  <BarChart3 className="h-8 w-8 text-orange-500" />
+                </div>
+                <div>
+                  <div className="text-3xl font-bold flex items-center gap-2">
+                    {averageScore.toFixed(2)}
+                    <div className="flex items-center text-red-500 text-sm font-normal">
+                    </div>
+                  </div>
+                  <div className="text-gray-500">Average Score</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* High Risk Contracts Card */}
+            <Card className="shadow-sm border border-gray-100 rounded-lg">
+              <CardContent className="p-6 flex items-center">
+                <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mr-4">
+                  <AlertTriangle className="h-8 w-8 text-blue-500" />
+                </div>
+                <div>
+                  <div className="text-3xl font-bold flex items-center gap-2">
+                    {highRiskContracts}
+                    <div className="flex items-center text-green-500 text-sm font-normal">
+                    </div>
+                  </div>
+                  <div className="text-gray-500">High Risk Contractors</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mb-4 flex flex-col sm:flex-row justify-between gap-4">
+            <div className="relative w-full sm:w-96">
+              <Input 
+                placeholder="Search Contracts" 
+                className="pl-10 border border-gray-200 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button variant="outline" className="border-gray-200 text-gray-700 flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filter Contracts
+              </Button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-md border border-gray-200 overflow-hidden">
             <Table>
-            <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-            <TableHead key={header.id}>
-            {header.isPlaceholder
-            ? null
-            : flexRender(
-                header.column.columnDef.header,
-                header.getContext()
-                )}
-            </TableHead>
-            ))}
-            </TableRow>
-            ))}
-            </TableHeader>
-            <TableBody>
+              <TableHeader className="bg-gray-50">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id} className="border-b border-gray-200">
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id} className="py-3 px-4 text-gray-600 font-medium text-left">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
                 {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                        <TableRow
-                        key={row.id}
-                        data-state={row.getIsSelected() && "selected"}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>                      
-                    ))
-                ): (
-                    <TableRow>
-                        <TableCell
-                        colSpan={columns.length}
-                        className="h-24 text-center"
-                        >
-                        No Results.    
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                      className="hover:bg-gray-50 border-b border-gray-100"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} className="py-3 px-4">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
-                        </TableRow>
+                      ))}
+                    </TableRow>                      
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center text-gray-500"
+                    >
+                      No Results.    
+                    </TableCell>
+                  </TableRow>
                 )}
-            </TableBody>
+              </TableBody>
             </Table>
-        </div>
-        <div className="flex items-center justify-end space-x-2 py-4">
+          </div>
+
+          <div className="flex items-center justify-end space-x-2 py-4">
             <Button
-             variant="outline"
-             size="sm"
-             onClick={() => table.previousPage()}
-             disabled={!table.getCanPreviousPage()}
-             >
-                Previous
-             </Button>
-             <Button
-             variant="outline"
-             size="sm"
-             onClick={() => table.nextPage()}
-             disabled={!table.getCanNextPage()}
-             >
-                Next
-             </Button>
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className="border-gray-200 text-gray-700"
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className="border-gray-200 text-gray-700"
+            >
+              Next
+            </Button>
+          </div>
+          
+          <UploadModal
+            isOpen={isUploadModalOpen}
+            onClose={() => setIsUploadModalOpen(false)}
+            onUploadComplete={() => {
+              refetch();
+              setIsUploadModalOpen(false);
+            }}
+          />
         </div>
-        <UploadModal
-        isOpen={isUploadModalOpen}
-        onClose={ () => setIsUploadModalOpen(false)}
-        onUploadComplete={() => {
-          refetch();
-          setIsUploadModalOpen(false);
-        }}
-        />
-        </div>
+      </div>
     );
 }
 

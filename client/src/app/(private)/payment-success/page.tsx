@@ -14,7 +14,7 @@ export default function PaymentSuccess() {
         <div className="min-h-screen flex items-center justify-center p-4">
             <Card className="w-full max-w-md">
         <CardHeader>
-        <CardTitle className="text-2xl font-bold">Payment Successful</CardTitle>
+        <CardTitle className="text-2xl font-bold text-green-600">Payment Successful</CardTitle>
         <CardDescription>Thank you for your payment.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -35,7 +35,7 @@ export default function PaymentSuccess() {
             <div className="flrx flex-col w-full space-y-2">   
             <Button
             onClick={() => setIsUploadModalOpen(true)}
-            className="w-full"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
                 Upload for Full Analysis
             </Button>

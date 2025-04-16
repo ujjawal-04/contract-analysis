@@ -2,71 +2,99 @@ import { api } from "@/lib/api";
 import stripePromise from "@/lib/stripe";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { Check } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 export function PricingSection() {
-   const handleUpgrade = async() => {
-      try {
-        const response = await api.get("/payments/create-checkout-session");
-        const stripe = await stripePromise;
-        await stripe?.redirectToCheckout({
-          sessionId: response.data.sessionId,
-        })
-      } catch (error)  {
-       console.error(error);
-      }
-    };
+  const handleUpgrade = async() => {
+    try {
+      const response = await api.get("/payments/create-checkout-session");
+      const stripe = await stripePromise;
+      await stripe?.redirectToCheckout({
+        sessionId: response.data.sessionId,
+      })
+    } catch (error)  {
+     console.error(error);
+    }
+  };
+
   return (
-  <div className="container mx-auto px-4 py-16 bg-gradient-to-b from-background to-background/80">
-      <h2 className="text-4xl font-extrabold tracking-tight sm:text-5xl text-center">
-          Choose the plan that's right for you
-      </h2>
-      <p className="text-lg text-muted-foreground mt-4 text-center max-w-3xl mx-auto">
-          Select the perfect plan for your needs. Upgrade anytime to unlock premium features and support.
-      </p>
-      <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mt-12">
-          <PricingCard
-           title="Basic"
-           description="For simple contract review"
-           price="$0"
-           period="/month"
-           features={[
-              "Basic contract analysis",
-              "Limited to 3 projects",
-              "Text-based summaries",
-              "5 common risks identified",
-              "Basic contract summary",
-              "Standard clause identification",
-              "Email support",
-           ]}
-           buttonText="Get Started"
-           onButtonClick={() => window.location.href = "/dashboard"}
-          />
+    <section className="w-full py-20 bg-white">
+      <div className="container px-4 md:px-6 max-w-6xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
+        >
+          <h2 className="text-3xl font-bold mb-4">Choose your plan</h2>
+          <p className="text-slate-600 max-w-2xl mx-auto">Select the perfect plan for your needs, upgrade anytime to unlock premium features</p>
+        </motion.div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {/* Basic Plan */}
+          <motion.div 
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+          >
+            <PricingCard
+              title="Basic"
+              description="Perfect for getting started"
+              price="$0"
+              period="/Free"
+              features={[
+                "Basic contract analysis",
+                "2 projects",
+                "3 potential risks identified",
+                "3 potential opportunities identified",
+                "Brief contract summary",
+                "Standard support",
+                "Email support"
+              ]}
+              buttonText="Get Started"
+              onButtonClick={() => window.location.href = "/dashboard"}
+              highlight={false}
+            />
+          </motion.div>
           
-          <PricingCard
-           title="Premium"
-           description="For comprehensive contract analysis"
-           price="$100"
-           period="/lifetime"
-           features={[
-              "Advanced contract analysis",
-              "Unlimited projects",
-              "Chat with your contract",
-              "10+ risks with severity levels",
-              "10+ opportunities with impact levels",
-              "Comprehensive contract summary",
-              "Improvement recommendations",
-              "Key clauses identification",
-              "Legal compliance assessment",
-              "Negotiation points",
-           ]}
-           buttonText="Upgrade"
-           onButtonClick={handleUpgrade}
-           highlight={true}
-          />
+          {/* Premium Plan */}
+          <motion.div 
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+          >
+            <PricingCard
+              title="Premium"
+              description="For comprehensive contract analysis"
+              price="$20"
+              period="/lifetime"
+              features={[
+                "Advanced contract analysis",
+                "Unlimited projects",
+                "Chat with your contract",
+                "10+ opportunities with impact levels",
+                "Comprehensive contract summary",
+                "Improvement recommendations",
+                "Key clauses identification",
+                "Legal compliance assessment",
+                "Negotiation points",
+                "Priority support"
+              ]}
+              buttonText="Upgrade Now"
+              onButtonClick={handleUpgrade}
+              highlight={true}
+            />
+          </motion.div>
+        </div>
       </div>
-  </div>
- )
+    </section>
+  );
 }
 
 interface PricingCardProps {
@@ -81,52 +109,60 @@ interface PricingCardProps {
 }
 
 function PricingCard({
-title,
-description,
-price,
-period,
-features,
-buttonText,
-highlight,
-onButtonClick,
+  title,
+  description,
+  price,
+  period,
+  features,
+  buttonText,
+  highlight,
+  onButtonClick,
 } : PricingCardProps) {
- return (
-  <Card className={`flex flex-col ${highlight ? "border-primary shadow-lg" : ""} 
-  relative overflow-hidden transition-all duration-300`}>
+  const animButtonVariants = {
+    hover: { scale: 1.03 },
+    tap: { scale: 0.98 }
+  };
+
+  return (
+    <Card className={`h-full border ${highlight ? "border-blue-200 bg-blue-50 shadow-md" : "border-gray-200 bg-white shadow-sm"} rounded-xl p-0 overflow-hidden transition-all duration-300 hover:shadow-md`}>
       {highlight && (
-        <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-3 py-1 text-xs font-medium rounded-bl-lg">
-          Recommended
+        <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs font-bold py-1 px-3 rounded-bl">
+          POPULAR
         </div>
       )}
-      <CardHeader>
-          <CardTitle className="text-2xl flex items-center gap-2">
-              {title}
-          </CardTitle>
-          <CardDescription>{description}</CardDescription>
+      <CardHeader className="pt-8 pb-2">
+        <CardTitle className="text-xl font-bold mb-1">{title}</CardTitle>
+        <CardDescription className="text-sm text-slate-600">{description}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow">
-          <p className="text-5xl font-extrabold mb-6">
-              {price}
-              <span className="text-base font-normal text-muted-foreground">
-                  {period}
-              </span>
-          </p>
-          <ul className="space-y-2">
-              {features.map((feature, index) => (
-                  <li className="flex items-center gap-2" key={index}>
-                    <Check className="h-5 w-5 text-primary flex-shrink-0" />
-                    {feature}
-                  </li>
-              ))}
-          </ul>
+      <CardContent className="pb-8">
+        <div className="flex items-baseline mb-6">
+          <span className="text-3xl font-bold">{price}</span>
+          <span className="text-slate-500 ml-1">{period}</span>
+        </div>
+        <ul className="space-y-4 mb-8">
+          {features.map((feature, index) => (
+            <li className="flex items-center" key={index}>
+              <CheckCircle2 className={`h-5 w-5 ${highlight ? "text-blue-500" : "text-blue-500"} mr-3 flex-shrink-0`} />
+              <span className="text-sm text-slate-700">{feature}</span>
+            </li>
+          ))}
+        </ul>
+        <motion.div 
+          whileHover="hover" 
+          whileTap="tap" 
+          variants={animButtonVariants}
+        >
           <Button 
-            className={`w-full mt-6 ${highlight ? "bg-primary hover:bg-primary/90" : ""}`} 
+            className={`w-full ${highlight 
+              ? "bg-blue-600 hover:bg-blue-700 text-white" 
+              : "border-blue-200 text-blue-600 hover:bg-blue-50"}`} 
             onClick={onButtonClick}
             variant={highlight ? "default" : "outline"}
           >
             {buttonText}
           </Button>
+        </motion.div>
       </CardContent>
-  </Card>
- )
+    </Card>
+  );
 }

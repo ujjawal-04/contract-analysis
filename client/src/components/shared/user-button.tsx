@@ -82,7 +82,8 @@ export function UserButton() {
                 </>
           ) : (
             <>
-            <Button onClick={ ()=> openModal("connectAccountModal")}>Sign In</Button>
+            <Button variant="outline" size="sm" className="hidden md:inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white" onClick={ ()=> openModal("connectAccountModal")}>
+              Connect Google Account</Button>
             </>
           )}
         </div>

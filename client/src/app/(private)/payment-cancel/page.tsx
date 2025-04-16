@@ -14,7 +14,7 @@ export default function PaymentSuccess() {
         <div className="flex items-center justify-center p-4 mt-10">
             <Card className="w-full max-w-md">
         <CardHeader>
-        <CardTitle className="text-2xl font-bold">Payment was Cancelled</CardTitle>
+        <CardTitle className="text-2xl font-bold text-red-600">Payment was Cancelled</CardTitle>
         <CardDescription>Something went wrong with your payment.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -22,7 +22,7 @@ export default function PaymentSuccess() {
                 <p>To receive your analysis, you need to upload an PDF.</p>
                 <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
                     <div className="flex items-center">
-                        <p className="text-sm text-blue-700 text-left">
+                        <p className="text-sm text-muted-foreground">
                             <strong>Note:</strong>
                             <br />
                             Your payment was cancelled.Please contact our Support team If you need any help
@@ -35,7 +35,7 @@ export default function PaymentSuccess() {
             <div className="flrx flex-col w-full space-y-2">   
             <Button
             onClick={() => setIsUploadModalOpen(true)}
-            className="w-full"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
                 Upload for Full Analysis
             </Button>
