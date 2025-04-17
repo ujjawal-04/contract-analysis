@@ -1,14 +1,16 @@
 "use client";
 
 import { ContractAnalysis } from "@/interfaces/contract.interface";
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { ArrowDown, ArrowUp, Minus } from "lucide-react";
+import { ArrowDown, ArrowUp, Minus, Lock } from "lucide-react";
 import OverallScoreChart from "./chart";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { TabsContent } from "@radix-ui/react-tabs";
 import { Button } from "../ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@radix-ui/react-accordion";
+import { api } from "@/lib/api";
+import stripePromise from "@/lib/stripe";
 
 interface IContractAnalysisResultsProps {
   analysisResults: ContractAnalysis;
@@ -24,32 +26,73 @@ export default function ContractAnalysisResults({
   isPremium = false
 }: IContractAnalysisResultsProps) {
   const [activeTab, setActiveTab] = useState("summary");
+  const [refreshChart, setRefreshChart] = useState(false);
+  
+  // For debugging - log the premium status
+  console.log("Premium status:", isPremium);
 
   if (!analysisResults) {
      return <div>No Results</div>   
   }
+  
+  // Force chart to refresh when needed
+  const handleRefreshChart = () => {
+    setRefreshChart(true);
+    setTimeout(() => setRefreshChart(false), 100);
+  };
+  
+  // Refresh chart on initial render
+  useEffect(() => {
+    handleRefreshChart();
+  }, []);
+
+  const handleUpgrade = async() => {
+      try {
+        const response = await api.get("/payments/create-checkout-session");
+        const stripe = await stripePromise;
+        await stripe?.redirectToCheckout({
+          sessionId: response.data.sessionId,
+        });
+      } catch (error)  {
+       console.error(error);
+      }
+    };
 
   const getScore = () => {
-    const score = Number(analysisResults.overallScore) || 45;
+    const score = Number(analysisResults.overallScore) || 75;
     if (score > 70) 
-      return { icon: ArrowUp, color: "text-green-500", text: "Good"};
+      return { icon: ArrowUp, color: "text-green-500", text: "Favorable", displayText: "Favorable" };
     if (score > 50) 
-      return { icon: Minus, color: "text-yellow-500", text: "Average"};
-    return { icon: ArrowDown, color: "text-red-500", text: "Bad"};
+      return { icon: Minus, color: "text-yellow-500", text: "Average", displayText: "Average" };
+    return { icon: ArrowDown, color: "text-red-500", text: "Bad", displayText: "Unfavorable" };
   };
 
   const scoreTrend = getScore();
+  const Icon = scoreTrend.icon;
 
   const getSeverityColor = (severity: string) => {
     switch(severity?.toLowerCase()) {
       case "high":
-        return "bg-red-100 text-red-800";
+        return "bg-red-100 text-red-600 border-red-300";
       case "medium":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 text-yellow-600 border-yellow-300";
       case "low":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 text-green-600 border-green-300";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 border-gray-300";
+    }
+  };
+
+  const getSeverityBadge = (severity: string) => {
+    switch(severity?.toLowerCase()) {
+      case "high":
+        return <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-600">High</span>;
+      case "medium":
+        return <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-600">Medium</span>;
+      case "low":
+        return <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-600">Low</span>;
+      default:
+        return <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Unknown</span>;
     }
   };
 
@@ -63,139 +106,256 @@ export default function ContractAnalysisResults({
     }>,
     type: "risk" | "opportunity",
   ) => {
-    // Always show all items for premium users or just 3 for non-premium
-    const displayItems = isPremium ? items : items.slice(0, 3);
-    const hasMoreItems = items.length > 3 && !isPremium;
-
+    // Show all items regardless of premium status
     return (
-      <ul className="space-y-4">
-        {/* First 3 items (visible to all users) */}
-        {displayItems.map((item, index) => {
+      <div className="space-y-4">
+        {items.map((item, index) => {
           const severityOrImpact = type === "risk" ? item.severity : item.impact;
-          const colorClass = getSeverityColor(severityOrImpact || "");
           
           return (
-            <li key={index} className="border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-              <h3 className="font-medium mb-2">
-                {type === "risk" ? item.risk : item.opportunity}
-              </h3>
-              <p className="text-sm text-gray-600 mb-2">{item.explanation}</p>
-              <div className="flex gap-4 text-xs">
-                <span className={`px-2 py-1 rounded font-medium ${colorClass}`}>
-                  {type === "risk" ? "Severity" : "Impact"}: {severityOrImpact}
-                </span>
+            <div key={index} className="border rounded-lg p-4 bg-white shadow-sm">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="font-medium text-gray-800">
+                  {type === "risk" ? item.risk : item.opportunity}
+                </h3>
+                <div className="ml-2">
+                  {getSeverityBadge(severityOrImpact || "")}
+                </div>
               </div>
-            </li>
+              <p className="text-sm text-gray-600">{item.explanation}</p>
+            </div>
           );
         })}
-        
-        {/* Blurred 4th item for non-premium users */}
-        {hasMoreItems && items.length > 3 && (
-          <li className="border rounded-lg p-4 shadow-sm relative overflow-hidden">
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
-              <p className="text-center font-medium text-gray-700">
-                <span className="inline mr-1 text-gray-400">+{items.length - 3} more</span>
-              </p>
-            </div>
-            <div className="filter blur-sm">
-              <h3 className="font-medium mb-2">
-                {type === "risk" ? items[3].risk : items[3].opportunity}
-              </h3>
-              <p className="text-sm text-gray-600 mb-2">{items[3].explanation}</p>
-              <div className="flex gap-4 text-xs">
-                <span className={`px-2 py-1 rounded font-medium ${getSeverityColor(type === "risk" ? items[3].severity || "" : items[3].impact || "")}`}>
-                  {type === "risk" ? "Severity" : "Impact"}: {type === "risk" ? items[3].severity : items[3].impact}
-                </span>
-              </div>
-            </div>
-          </li>
-        )}
-      </ul>
+      </div>
     );
   };
 
+  // Premium upgrade prompt component
+  const PremiumUpgradePrompt = () => {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+          <Lock className="w-8 h-8 text-gray-500" />
+        </div>
+        <h3 className="text-xl font-bold mb-2">Premium Feature</h3>
+        <p className="text-gray-600 mb-6 max-w-md">
+          Unlock detailed contract analysis including key clauses, recommendations, 
+          and negotiation points by upgrading to our Premium plan.
+        </p>
+        <Button onClick={handleUpgrade} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2">
+          Upgrade to Premium
+        </Button>
+      </div>
+    );
+  };
+
+  // Contract details content component
+  const ContractDetailsContent = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="border rounded-lg p-4">
+          <h3 className="text-lg font-medium mb-2">Contract Type</h3>
+          <p className="text-gray-700">{analysisResults.contractType || "Not specified"}</p>
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="text-lg font-medium mb-2">Duration</h3>
+          <p className="text-gray-700">{analysisResults.contractDuration || "Not specified"}</p>
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="text-lg font-medium mb-2">Financial Terms</h3>
+          <p className="text-gray-700">{analysisResults.financialTerms?.description || "Not specified"}</p>
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="text-lg font-medium mb-2">Termination Conditions</h3>
+          <p className="text-gray-700">{analysisResults.terminationConditions || "Not specified"}</p>
+        </div>
+      </div>
+      
+      {/* Key Clauses Section */}
+      <div>
+        <h3 className="text-xl font-bold mb-4">Key Clauses</h3>
+        <div className="space-y-3">
+          {analysisResults.keyClauses && Array.isArray(analysisResults.keyClauses) ? (
+            analysisResults.keyClauses.map((clause, index) => (
+              <div key={index} className="border rounded-lg p-4">
+                <h4 className="font-medium mb-1">{clause}</h4>
+                <p className="text-sm text-gray-600">
+                  {analysisResults.specificClauses && typeof analysisResults.specificClauses === 'string' 
+                    ? analysisResults.specificClauses 
+                    : "No details provided"}
+                </p>
+              </div>
+            ))
+          ) : (
+            <div className="border rounded-lg p-4">
+              <h4 className="font-medium mb-1">No key clauses available</h4>
+              <p className="text-sm text-gray-600">
+                No key clauses have been identified for this contract.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Legal Compliance Section */}
+      <div>
+        <h3 className="text-xl font-bold mb-4">Legal Compliance</h3>
+        <div className="border rounded-lg p-4">
+          <p className="text-gray-700">
+            {analysisResults.legalCompliance || "No legal compliance information available."}
+          </p>
+        </div>
+      </div>
+      
+      {/* Recommendations Section */}
+      <div>
+        <h3 className="text-xl font-bold mb-4">Recommendations</h3>
+        {analysisResults.recommendations && analysisResults.recommendations.length > 0 ? (
+          <ul className="list-disc pl-5 space-y-2">
+            {analysisResults.recommendations.map((recommendation, index) => (
+              <li key={index} className="text-gray-700">{recommendation}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-700">No recommendations available.</p>
+        )}
+      </div>
+      
+      {/* Negotiation Points Section */}
+      <div>
+        <h3 className="text-xl font-bold mb-4">Negotiation Points</h3>
+        {analysisResults.negotiationPoints && analysisResults.negotiationPoints.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {analysisResults.negotiationPoints.map((point, index) => (
+              <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                <p className="text-sm font-medium">{point}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-700">No negotiation points available.</p>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Analysis Results</h1>
-        <div className="flex space-x-2"></div>
+    <div className="container mx-auto px-4 py-6 bg-gray-50">
+      <div className="flex justify-between items-center mb-5">
+        <h1 className="text-2xl font-bold text-gray-800">Contract Analysis result</h1>
+        <div className="flex space-x-3">
+          <Button 
+            onClick={handleRefreshChart} 
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800"
+          >
+            Refresh
+          </Button>
+          <Button className="bg-blue-600 text-white">Ask AI</Button>
+        </div>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Overall Contract Score</CardTitle>
-          <CardDescription>
-            Based on risks and opportunities identified
+      {/* Overall Contract Score */}
+      <Card className="bg-white shadow-sm border-0 mb-6">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xl text-gray-800">Overall Contract Score</CardTitle>
+          <CardDescription className="text-gray-600 text-sm">
+            Based on risks and opportunities analysis
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="w-1/2">
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="text-4xl font-bold">
-                  {analysisResults.overallScore ?? 0}
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div className="w-full md:w-1/3 mb-6 md:mb-0">
+              <div className="flex items-center mb-4">
+                <div className="text-5xl font-bold mr-4">
+                  {analysisResults.overallScore}%
                 </div>
-                <div className={`flex items-center ${scoreTrend.color}`}>
-                  <scoreTrend.icon className="size-6 mr-1" />
-                  <span className="font-semibold">{scoreTrend.text}</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Risk</span>
-                  <span>{100 - Number(analysisResults.overallScore)}%</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Opportunities</span>
-                  <span>{analysisResults.overallScore}%</span>
+                <div className="text-green-500 font-medium flex items-center">
+                  <Icon size={18} className="mr-1" />
+                  {scoreTrend.displayText}
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mt-4">
-                This score represents the overall risk and opportunities identified in the contract.
-              </p>
+              <div className="space-y-2 mb-4 mt-10">
+                <div className="flex justify-between text-sm">
+                  <span className="text-blue-600 text-lg">Risk</span>
+                  <span className="font-bold text-lg">{100 - Number(analysisResults.overallScore)}%</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-blue-600 text-lg">Opportunities</span>
+                  <span className="font-bold text-lg ">{analysisResults.overallScore}%</span>
+                </div>
+              </div>
             </div>
-            <div className="w-1/2 h-48 flex">
-              <OverallScoreChart overallScore={Number(analysisResults.overallScore)} />
+            <div className="w-full md:w-2/3 flex justify-center h-64">
+              {refreshChart ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+                </div>
+              ) : (
+                <OverallScoreChart overallScore={Number(analysisResults.overallScore)} />
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="risks">Risks</TabsTrigger>
-          <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
-          <TabsTrigger value="details">Details</TabsTrigger>
+        <TabsList className="bg-gray-100 p-1 rounded-lg flex space-x-1 w-full">
+          <TabsTrigger 
+            value="summary" 
+            className={`rounded flex-1 py-2 ${activeTab === 'summary' ? 'bg-blue-500 shadow-sm text-black' : 'text-gray-900'}`}
+          >
+            <span className="font-medium">Summary</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="risks" 
+            className={`rounded flex-1 py-2 ${activeTab === 'risks' ? 'bg-blue-500 text-black' : 'text-gray-900'}`}
+          >
+            <span className="font-medium">Risks</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="opportunities" 
+            className={`rounded flex-1 py-2 ${activeTab === 'opportunities' ? 'bg-blue-500 shadow-sm text-black' : 'text-gray-900'}`}
+          >
+            <span className="font-medium">Opportunities</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="details" 
+            className={`rounded flex-1 py-2 ${activeTab === 'details' ? 'bg-blue-500 shadow-sm text-black' : 'text-gray-900'}`}
+          >
+            <span className="font-medium">Details</span>
+          </TabsTrigger>
         </TabsList>
+
         <TabsContent value="summary">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contract Summary</CardTitle>
+          <Card className="bg-white shadow-sm border-0">
+            <CardHeader className="border-b">
+              <CardTitle className="text-blue-600">Contract Summary</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-lg leading-relaxed">
+            <CardContent className="pt-4">
+              <p className="text-gray-700 leading-relaxed">
                 {analysisResults.summary}
               </p>
             </CardContent>
           </Card>
         </TabsContent>
+
         <TabsContent value="risks">
-          <Card>
-            <CardHeader>
-              <CardTitle>Risks</CardTitle>
+          <Card className="bg-white shadow-sm border-0">
+            <CardHeader className="border-b">
+              <CardTitle className="text-blue-600">Risks</CardTitle>
             </CardHeader>
-            <CardContent>
-              {renderRisksAndOpportunities(analysisResults.risks || [], "risk")}
+            <CardContent className="pt-4">
+              {renderRisksAndOpportunities(analysisResults.risks , "risk")}
             </CardContent>
           </Card>
         </TabsContent>
+
         <TabsContent value="opportunities">
-          <Card>
-            <CardHeader>
-              <CardTitle>Opportunities</CardTitle>
+          <Card className="bg-white shadow-sm border-0">
+            <CardHeader className="border-b">
+              <CardTitle className="text-blue-600">Opportunities</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               {renderRisksAndOpportunities(
                 analysisResults.opportunities || [],
                 "opportunity"
@@ -203,98 +363,18 @@ export default function ContractAnalysisResults({
             </CardContent>
           </Card>
         </TabsContent>
+
         <TabsContent value="details">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contract Details</CardTitle>
+          <Card className="bg-white shadow-sm border-0">
+            <CardHeader className="border-b">
+              <CardTitle className="text-blue-600">Contract Details</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border rounded-lg p-4">
-                    <h3 className="text-lg font-medium mb-2">Contract Type</h3>
-                    <p className="text-gray-700">{analysisResults.contractType || "Not specified"}</p>
-                  </div>
-                  <div className="border rounded-lg p-4">
-                    <h3 className="text-lg font-medium mb-2">Duration</h3>
-                    <p className="text-gray-700">{analysisResults.contractDuration || "Not specified"}</p>
-                  </div>
-                  <div className="border rounded-lg p-4">
-                    <h3 className="text-lg font-medium mb-2">Financial Terms</h3>
-                    <p className="text-gray-700">{analysisResults.financialTerms?.description || "Not specified"}</p>
-                  </div>
-                  <div className="border rounded-lg p-4">
-                    <h3 className="text-lg font-medium mb-2">Termination Conditions</h3>
-                    <p className="text-gray-700">{analysisResults.terminationConditions || "Not specified"}</p>
-                  </div>
-                </div>
-                
-                {/* Key Clauses Section */}
-                <div>
-                  <h3 className="text-xl font-bold mb-4">Key Clauses</h3>
-                  <div className="space-y-3">
-                    {analysisResults.keyClauses && Array.isArray(analysisResults.keyClauses) ? (
-                      analysisResults.keyClauses.map((clause, index) => (
-                        <div key={index} className="border rounded-lg p-4">
-                          <h4 className="font-medium mb-1">{clause}</h4>
-                          <p className="text-sm text-gray-600">
-                            {analysisResults.specificClauses && typeof analysisResults.specificClauses === 'string' 
-                              ? analysisResults.specificClauses 
-                              : "No details provided"}
-                          </p>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="border rounded-lg p-4">
-                        <h4 className="font-medium mb-1">No key clauses available</h4>
-                        <p className="text-sm text-gray-600">
-                          No key clauses have been identified for this contract.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Legal Compliance Section */}
-                <div>
-                  <h3 className="text-xl font-bold mb-4">Legal Compliance</h3>
-                  <div className="border rounded-lg p-4">
-                    <p className="text-gray-700">
-                      {analysisResults.legalCompliance || "No legal compliance information available."}
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Recommendations Section */}
-                <div>
-                  <h3 className="text-xl font-bold mb-4">Recommendations</h3>
-                  {analysisResults.recommendations && analysisResults.recommendations.length > 0 ? (
-                    <ul className="list-disc pl-5 space-y-2">
-                      {analysisResults.recommendations.map((recommendation, index) => (
-                        <li key={index} className="text-gray-700">{recommendation}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-700">No recommendations available.</p>
-                  )}
-                </div>
-                
-                {/* Negotiation Points Section */}
-                <div>
-                  <h3 className="text-xl font-bold mb-4">Negotiation Points</h3>
-                  {analysisResults.negotiationPoints && analysisResults.negotiationPoints.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {analysisResults.negotiationPoints.map((point, index) => (
-                        <div key={index} className="border rounded-lg p-3 bg-gray-50">
-                          <p className="text-sm font-medium">{point}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-700">No negotiation points available.</p>
-                  )}
-                </div>
-              </div>
+            <CardContent className="pt-4">
+              {isPremium === true ? (
+                <ContractDetailsContent />
+              ) : (
+                <PremiumUpgradePrompt />
+              )}
             </CardContent>
           </Card>
         </TabsContent>

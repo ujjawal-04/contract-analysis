@@ -62,6 +62,10 @@ export default function ContractResults({ contractId }: IContractResultsProps) {
     }
   };
 
+  // For debugging
+  console.log("Current user:", user);
+  console.log("Is user premium:", user?.isPremium);
+
   if (loading) {
     return <div className="p-4">Loading contract details...</div>;
   }
@@ -90,6 +94,7 @@ export default function ContractResults({ contractId }: IContractResultsProps) {
       contractId={contractId}
       analysisResults={analysisResults}
       isActive={true}
+      isPremium={user?.isPremium === true}
     />
   );
 }

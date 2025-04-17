@@ -138,7 +138,7 @@ export function HeroSection() {
                             <div className="bg-white rounded-xl shadow-2xl">
                                 {/* This would be the dashboard image in the actual implementation */}
                                 <img 
-                                    src="/api/placeholder/1200/675" 
+                                    src="/1.png" 
                                     alt="Dashboard preview" 
                                     className="w-full h-auto rounded-lg"
                                 />
@@ -248,7 +248,7 @@ export function HeroSection() {
                             <div className="bg-white rounded-xl shadow-xl border border-gray-100">
                                 <div className="p-4">
                                     <img 
-                                        src="/api/placeholder/1200/675" 
+                                        src="/2.png" 
                                         alt="Contract analysis dashboard" 
                                         className="w-full h-auto rounded-lg"
                                     />

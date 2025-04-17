@@ -101,7 +101,7 @@ export default function GlobalSettings() {
 
   return (
     <div className="container mx-auto py-8 px-6">
-      <h1 className="text-2xl font-bold mb-6">Global Settings</h1>
+      <h1 className="text-2xl font-bold mb-6">Settings</h1>
       
       <Card className="mb-8">
         <CardContent className="pt-6">
