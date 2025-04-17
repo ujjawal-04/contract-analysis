@@ -192,7 +192,7 @@ export function UploadModal({
                                 <p className="mt-4 text-sm text-gray-600">
                                     Drag &apos;n&apos; drop some files here, or click to select files.
                                 </p>
-                                <p className="bg-yellow-500/30 border border-yellow-100 text-yellow-200 p-2 rounded mt-2">
+                                <p className="bg-yellow-500/50 border border-yellow-100 text-black p-2 rounded mt-2">
                                  Note: Only PDF files are accepted.
                                 </p>
                             </div>

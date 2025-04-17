@@ -43,12 +43,16 @@ export function UserButton() {
             <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="size-8 rounded-full">
-                  <Avatar className="size-8">
-                    <AvatarImage src={user?.profilePicture || ""} />
-                    <AvatarFallback>
-                      {user?.displayName?.charAt(0) || ""}
-                    </AvatarFallback>
-                  </Avatar>
+                <Avatar className="relative w-8 h-8">
+                <AvatarImage
+                  src={user?.profilePicture || ""}
+                  alt="User profile"
+                  className="object-cover w-full h-full rounded-full"
+                />
+                <AvatarFallback>
+                  {user?.displayName?.charAt(0) || ""}
+                </AvatarFallback>
+              </Avatar>
                 </Button> 
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" forceMount>
