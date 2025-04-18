@@ -1,16 +1,17 @@
 "use client";
 
 import { ContractAnalysis } from "@/interfaces/contract.interface";
-import { ReactNode, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { ArrowDown, ArrowUp, Minus, Lock } from "lucide-react";
 import OverallScoreChart from "./chart";
-import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
-import { TabsContent } from "@radix-ui/react-tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import { Button } from "../ui/button";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@radix-ui/react-accordion";
 import { api } from "@/lib/api";
 import stripePromise from "@/lib/stripe";
+import ChatbotModal from "./ChatbotModal";
+
+
 
 interface IContractAnalysisResultsProps {
   analysisResults: ContractAnalysis;
@@ -19,59 +20,65 @@ interface IContractAnalysisResultsProps {
   isPremium?: boolean;
 }
 
-export default function ContractAnalysisResults({ 
-  analysisResults, 
-  contractId, 
+export default function ContractAnalysisResults({
+  analysisResults,
+  contractId,
   isActive = false,
   isPremium = false
 }: IContractAnalysisResultsProps) {
   const [activeTab, setActiveTab] = useState("summary");
   const [refreshChart, setRefreshChart] = useState(false);
-  
-  // For debugging - log the premium status
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+
   console.log("Premium status:", isPremium);
 
   if (!analysisResults) {
-     return <div>No Results</div>   
+    return <div>No Results</div>
   }
-  
-  // Force chart to refresh when needed
+
   const handleRefreshChart = () => {
     setRefreshChart(true);
     setTimeout(() => setRefreshChart(false), 100);
   };
-  
-  // Refresh chart on initial render
+
   useEffect(() => {
     handleRefreshChart();
   }, []);
 
-  const handleUpgrade = async() => {
-      try {
-        const response = await api.get("/payments/create-checkout-session");
-        const stripe = await stripePromise;
-        await stripe?.redirectToCheckout({
-          sessionId: response.data.sessionId,
-        });
-      } catch (error)  {
-       console.error(error);
-      }
-    };
+  const handleOpenChatModal = () => {
+    setIsChatModalOpen(true);
+  };
+
+  const handleCloseChatModal = () => {
+    setIsChatModalOpen(false);
+  };
+  const geminiApiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+  const handleUpgrade = async () => {
+    try {
+      const response = await api.get("/payments/create-checkout-session");
+      console.log("response",response)
+      const stripe = await stripePromise;
+      await stripe?.redirectToCheckout({
+        sessionId: response.data.sessionId,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const getScore = () => {
     const score = Number(analysisResults.overallScore) || 75;
-    if (score > 70) 
+    if (score > 70)
       return { icon: ArrowUp, color: "text-green-500", text: "Favorable", displayText: "Favorable" };
-    if (score > 50) 
+    if (score > 50)
       return { icon: Minus, color: "text-yellow-500", text: "Average", displayText: "Average" };
     return { icon: ArrowDown, color: "text-red-500", text: "Bad", displayText: "Unfavorable" };
   };
-
   const scoreTrend = getScore();
   const Icon = scoreTrend.icon;
-
   const getSeverityColor = (severity: string) => {
-    switch(severity?.toLowerCase()) {
+    switch (severity?.toLowerCase()) {
       case "high":
         return "bg-red-100 text-red-600 border-red-300";
       case "medium":
@@ -84,7 +91,7 @@ export default function ContractAnalysisResults({
   };
 
   const getSeverityBadge = (severity: string) => {
-    switch(severity?.toLowerCase()) {
+    switch (severity?.toLowerCase()) {
       case "high":
         return <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-600">High</span>;
       case "medium":
@@ -106,14 +113,14 @@ export default function ContractAnalysisResults({
     }>,
     type: "risk" | "opportunity",
   ) => {
-    // Show all items regardless of premium status
+    console.log("items", items);
     return (
       <div className="space-y-4">
         {items.map((item, index) => {
           const severityOrImpact = type === "risk" ? item.severity : item.impact;
-          
+
           return (
-            <div key={index} className="border rounded-lg p-4 bg-white shadow-sm">
+            <div key={index} className="bordefr rounded-lg p-4 bg-white shadow-sm">
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-medium text-gray-800">
                   {type === "risk" ? item.risk : item.opportunity}
@@ -130,7 +137,6 @@ export default function ContractAnalysisResults({
     );
   };
 
-  // Premium upgrade prompt component
   const PremiumUpgradePrompt = () => {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
@@ -139,7 +145,7 @@ export default function ContractAnalysisResults({
         </div>
         <h3 className="text-xl font-bold mb-2">Premium Feature</h3>
         <p className="text-gray-600 mb-6 max-w-md">
-          Unlock detailed contract analysis including key clauses, recommendations, 
+          Unlock detailed contract analysis including key clauses, recommendations,
           and negotiation points by upgrading to our Premium plan.
         </p>
         <Button onClick={handleUpgrade} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2">
@@ -149,7 +155,6 @@ export default function ContractAnalysisResults({
     );
   };
 
-  // Contract details content component
   const ContractDetailsContent = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -170,8 +175,7 @@ export default function ContractAnalysisResults({
           <p className="text-gray-700">{analysisResults.terminationConditions || "Not specified"}</p>
         </div>
       </div>
-      
-      {/* Key Clauses Section */}
+
       <div>
         <h3 className="text-xl font-bold mb-4">Key Clauses</h3>
         <div className="space-y-3">
@@ -180,8 +184,8 @@ export default function ContractAnalysisResults({
               <div key={index} className="border rounded-lg p-4">
                 <h4 className="font-medium mb-1">{clause}</h4>
                 <p className="text-sm text-gray-600">
-                  {analysisResults.specificClauses && typeof analysisResults.specificClauses === 'string' 
-                    ? analysisResults.specificClauses 
+                  {analysisResults.specificClauses && typeof analysisResults.specificClauses === 'string'
+                    ? analysisResults.specificClauses
                     : "No details provided"}
                 </p>
               </div>
@@ -196,8 +200,7 @@ export default function ContractAnalysisResults({
           )}
         </div>
       </div>
-      
-      {/* Legal Compliance Section */}
+
       <div>
         <h3 className="text-xl font-bold mb-4">Legal Compliance</h3>
         <div className="border rounded-lg p-4">
@@ -206,8 +209,7 @@ export default function ContractAnalysisResults({
           </p>
         </div>
       </div>
-      
-      {/* Recommendations Section */}
+
       <div>
         <h3 className="text-xl font-bold mb-4">Recommendations</h3>
         {analysisResults.recommendations && analysisResults.recommendations.length > 0 ? (
@@ -220,8 +222,7 @@ export default function ContractAnalysisResults({
           <p className="text-gray-700">No recommendations available.</p>
         )}
       </div>
-      
-      {/* Negotiation Points Section */}
+
       <div>
         <h3 className="text-xl font-bold mb-4">Negotiation Points</h3>
         {analysisResults.negotiationPoints && analysisResults.negotiationPoints.length > 0 ? (
@@ -244,17 +245,21 @@ export default function ContractAnalysisResults({
       <div className="flex justify-between items-center mb-5">
         <h1 className="text-2xl font-bold text-gray-800">Contract Analysis result</h1>
         <div className="flex space-x-3">
-          <Button 
-            onClick={handleRefreshChart} 
+          <Button
+            onClick={handleRefreshChart}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800"
           >
             Refresh
           </Button>
-          <Button className="bg-blue-600 text-white">Ask AI</Button>
+          <Button
+            className="bg-blue-600 text-white"
+            onClick={handleOpenChatModal}
+          >
+            Ask AI
+          </Button>
         </div>
       </div>
 
-      {/* Overall Contract Score */}
       <Card className="bg-white shadow-sm border-0 mb-6">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl text-gray-800">Overall Contract Score</CardTitle>
@@ -300,26 +305,26 @@ export default function ContractAnalysisResults({
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
         <TabsList className="bg-gray-100 p-1 rounded-lg flex space-x-1 w-full">
-          <TabsTrigger 
-            value="summary" 
+          <TabsTrigger
+            value="summary"
             className={`rounded flex-1 py-2 ${activeTab === 'summary' ? 'bg-blue-500 shadow-sm text-black' : 'text-gray-900'}`}
           >
             <span className="font-medium">Summary</span>
           </TabsTrigger>
-          <TabsTrigger 
-            value="risks" 
+          <TabsTrigger
+            value="risks"
             className={`rounded flex-1 py-2 ${activeTab === 'risks' ? 'bg-blue-500 text-black' : 'text-gray-900'}`}
           >
             <span className="font-medium">Risks</span>
           </TabsTrigger>
-          <TabsTrigger 
-            value="opportunities" 
+          <TabsTrigger
+            value="opportunities"
             className={`rounded flex-1 py-2 ${activeTab === 'opportunities' ? 'bg-blue-500 shadow-sm text-black' : 'text-gray-900'}`}
           >
             <span className="font-medium">Opportunities</span>
           </TabsTrigger>
-          <TabsTrigger 
-            value="details" 
+          <TabsTrigger
+            value="details"
             className={`rounded flex-1 py-2 ${activeTab === 'details' ? 'bg-blue-500 shadow-sm text-black' : 'text-gray-900'}`}
           >
             <span className="font-medium">Details</span>
@@ -345,7 +350,7 @@ export default function ContractAnalysisResults({
               <CardTitle className="text-blue-600">Risks</CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
-              {renderRisksAndOpportunities(analysisResults.risks , "risk")}
+              {renderRisksAndOpportunities(analysisResults.risks, "risk")}
             </CardContent>
           </Card>
         </TabsContent>
@@ -359,7 +364,7 @@ export default function ContractAnalysisResults({
               {renderRisksAndOpportunities(
                 analysisResults.opportunities || [],
                 "opportunity"
-              )}  
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -379,6 +384,10 @@ export default function ContractAnalysisResults({
           </Card>
         </TabsContent>
       </Tabs>
+
+      <ChatbotModal open={isChatModalOpen} onClose={handleCloseChatModal} geminiApiKey={geminiApiKey} context={analysisResults.contractText}/>
     </div>
   );
 }
+
+
