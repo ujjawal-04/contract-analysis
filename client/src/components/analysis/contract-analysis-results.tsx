@@ -1,5 +1,3 @@
-"use client";
-
 import { ContractAnalysis } from "@/interfaces/contract.interface";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
@@ -10,8 +8,15 @@ import { Button } from "../ui/button";
 import { api } from "@/lib/api";
 import stripePromise from "@/lib/stripe";
 import ChatbotModal from "./ChatbotModal";
-
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "../ui/dialog";
 
 interface IContractAnalysisResultsProps {
   analysisResults: ContractAnalysis;
@@ -240,6 +245,56 @@ export default function ContractAnalysisResults({
     </div>
   );
 
+  // Ask AI button rendering based on premium status
+  const [isPremiumDialogOpen, setIsPremiumDialogOpen] = useState(false);
+  
+  const renderAskAIButton = () => {
+    if (isPremium) {
+      return (
+        <Button
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+          onClick={handleOpenChatModal}
+        >
+          Ask AI
+        </Button>
+      );
+    } else {
+      return (
+        <Dialog open={isPremiumDialogOpen} onOpenChange={setIsPremiumDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white opacity-90"
+              onClick={() => setIsPremiumDialogOpen(true)}
+            >
+              Ask AI
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" /> Premium Feature
+              </DialogTitle>
+              <DialogDescription>
+                Upgrade to premium to use this feature.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-2 mt-4">
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={handleUpgrade}
+              >
+                Upgrade to Premium
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      );
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-6 bg-gray-50">
       <div className="flex justify-between items-center mb-5">
@@ -251,12 +306,7 @@ export default function ContractAnalysisResults({
           >
             Refresh
           </Button>
-          <Button
-            className="bg-blue-600 text-white"
-            onClick={handleOpenChatModal}
-          >
-            Ask AI
-          </Button>
+          {renderAskAIButton()}
         </div>
       </div>
 
@@ -375,7 +425,7 @@ export default function ContractAnalysisResults({
               <CardTitle className="text-blue-600">Contract Details</CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
-              {isPremium === true ? (
+              {isPremium ? (
                 <ContractDetailsContent />
               ) : (
                 <PremiumUpgradePrompt />
@@ -385,9 +435,15 @@ export default function ContractAnalysisResults({
         </TabsContent>
       </Tabs>
 
-      <ChatbotModal open={isChatModalOpen} onClose={handleCloseChatModal} geminiApiKey={geminiApiKey} context={analysisResults.contractText}/>
+      {/* Only render the ChatbotModal if isPremium is true */}
+      {isPremium && (
+        <ChatbotModal 
+          open={isChatModalOpen} 
+          onClose={handleCloseChatModal} 
+          geminiApiKey={geminiApiKey} 
+          context={analysisResults.contractText}
+        />
+      )}
     </div>
   );
 }
-
-

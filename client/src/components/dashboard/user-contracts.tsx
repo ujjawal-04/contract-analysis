@@ -1,12 +1,10 @@
-import { ContractAnalysis } from "@/interfaces/contract.interface"
-import { api } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ColumnDef, flexRender, getCoreRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable } from "@tanstack/react-table";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { MoreHorizontal, Users, BarChart3, AlertTriangle, ArrowUp, ArrowDown, Filter } from "lucide-react";
+import { Card, CardContent } from "../ui/card";
+import { MoreHorizontal, Users, BarChart3, AlertTriangle, Filter } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { UploadModal } from "../modals/upload-modal";
 import { cn } from "@/lib/utils";
@@ -30,16 +28,46 @@ import {
   AlertDialogTrigger 
 } from "../ui/alert-dialog";
 import { Input } from "../ui/input";
+import { toast } from "react-hot-toast";
+import { api, deleteContract } from "@/lib/api";
+
+// Import your contract interface or define it here
+interface Risk {
+  risk: string;
+  explanation: string;
+  severity: "low" | "medium" | "high";
+}
+
+interface ContractAnalysis {
+  _id: string;
+  userId: string;
+  contractType: string;
+  summary: string;
+  overallScore: number | string;
+  risks: Risk[];
+  createdAt: string;
+}
 
 export default function UserContracts() {
-    const { data: contracts, refetch } = useQuery<ContractAnalysis[]>({
+    // IMPORTANT: Updated API path - removed '/api' prefix since it might be included in your baseURL already
+    const { data: contracts, refetch, isLoading, error } = useQuery<ContractAnalysis[]>({
         queryKey: ["user-contracts"],
-        queryFn: () => fetchUserContracts(),
+        queryFn: async () => {
+            try {
+                // Using direct URL path without '/api' prefix - adjust based on your setup
+                const response = await api.get("/contracts/user-contracts");
+                console.log("Contracts API response:", response.data);
+                return response.data;
+            } catch (err) {
+                console.error("Error fetching contracts:", err);
+                throw err;
+            }
+        },
     });
 
     const [sorting, setSorting] = useState<SortingState>([]);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-    const [contractToDelete, setContractToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const contractTypeColors: { [key: string]: string } = {
         "Employment": "bg-blue-100 text-blue-800 hover:bg-blue-200",
@@ -55,33 +83,42 @@ export default function UserContracts() {
             accessorKey: "_id",
             header: ({ column }) => {
                 return <div className="flex items-center">
-                  <span className="font-medium">Contract id</span>
-                  <span className="ml-2">
-                  </span>
-                </div>
+                  <span className="font-medium">Contract ID</span>
+                </div>;
             },
             cell: ({ row }) => {
                 return (
                     <div className="font-medium">
                         {row.getValue("_id")}
                     </div>
-                )
+                );
             }
         },
         {
             accessorKey: "overallScore",
             header: () => <div className="font-medium">Overall Score</div>,
             cell: ({ row }) => {
-                const score = parseFloat(String(row.getValue("overallScore")));
+                // Handle both string and number types for overallScore
+                let scoreValue: number;
+                const rawScore = row.getValue("overallScore");
+                
+                if (typeof rawScore === "number") {
+                    scoreValue = rawScore;
+                } else if (typeof rawScore === "string") {
+                    scoreValue = parseFloat(rawScore);
+                } else {
+                    scoreValue = 0; // Default if undefined or invalid
+                }
+                
                 let badgeClass = "";
                 
-                if (score >= 80) {
+                if (scoreValue >= 80) {
                     badgeClass = "bg-green-100 text-green-800 border-green-200";
-                } else if (score >= 70) {
+                } else if (scoreValue >= 70) {
                     badgeClass = "bg-blue-100 text-blue-800 border-blue-200";
-                } else if (score >= 60) {
+                } else if (scoreValue >= 60) {
                     badgeClass = "bg-yellow-100 text-yellow-800 border-yellow-200";
-                } else if (score >= 50) {
+                } else if (scoreValue >= 50) {
                     badgeClass = "bg-orange-100 text-orange-800 border-orange-200";
                 } else {
                     badgeClass = "bg-red-100 text-red-800 border-red-200";
@@ -89,89 +126,95 @@ export default function UserContracts() {
                 
                 return (
                     <Badge className={cn("rounded-md font-medium", badgeClass)}>
-                        {score.toFixed(2)}
+                        {scoreValue.toFixed(2)}
                     </Badge>
                 );
             }
         },
         {
             accessorKey: "contractType",
-            header: "Contract type",
+            header: "Contract Type",
             cell: ({ row }) => {
                const contractType = row.getValue("contractType") as string;
                const colorClass =
                contractTypeColors[contractType] || contractTypeColors["Other"];
-                return <Badge className={cn("rounded-md", colorClass)}>{contractType}</Badge>
+                return <Badge className={cn("rounded-md", colorClass)}>{contractType}</Badge>;
             }
         },
-      {
-        id: "actions",
-        header: "Actions",
-        cell: ({ row }) => {
-        const contract = row.original;
+        {
+            id: "actions",
+            header: "Actions",
+            cell: ({ row }) => {
+                const contract = row.original;
 
-        const handleDeleteClick = async () => {
-          try {
-            await api.delete(`/contracts/${contract._id}`);
-            refetch(); // Refresh the data after deletion
-          } catch (error) {
-            console.error("Error deleting contract:", error);
-          }
-        };
+                const handleDeleteClick = async () => {
+                    try {
+                        setIsDeleting(true);
+                        // Updated to use the correct path without /api prefix
+                        await deleteContract(contract._id);
+                        await refetch(); // Refresh the data after deletion
+                        toast.success("Contract deleted successfully");
+                    } catch (error) {
+                        console.error("Error deleting contract:", error);
+                        toast.error(error instanceof Error ? error.message : "Failed to delete contract");
+                    } finally {
+                        setIsDeleting(false);
+                    }
+                };
 
-        return (
-          <AlertDialog>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="size-8 p-0">
-                  <span className="sr-only">Open Menu</span>
-                  <MoreHorizontal className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <Link href={`/dashboard/contract/${contract._id}`} className="w-full">
-                  <DropdownMenuItem className="cursor-pointer">
-                    View Details
-                  </DropdownMenuItem>
-                </Link>
-                <DropdownMenuSeparator />
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem 
-                    className="cursor-pointer hover:text-destructive/20 text-destructive"
-                    onSelect={(e) => e.preventDefault()}>
-                    Delete Contract
-                  </DropdownMenuItem>
-                </AlertDialogTrigger>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <AlertDialogContent className="border border-gray-200 p-0 overflow-hidden">
-              <AlertDialogHeader className="bg-gray-50 p-6 border-b border-gray-200">
-                <AlertDialogTitle className="text-xl font-bold text-slate-800">Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription className="text-slate-600 mt-2">
-                  This action cannot be undone. This will permanently delete your contract
-                  and remove your data from our servers.
-                </AlertDialogDescription>
-              <AlertDialogFooter className="p-4 bg-gray-50 border-gray-200">
-                <AlertDialogCancel className="border-gray-200 text-gray-700 hover:bg-gray-50">
-                  Cancel
-                </AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleDeleteClick();
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Continue
-                </AlertDialogAction>
-              </AlertDialogFooter>
-              </AlertDialogHeader>
-            </AlertDialogContent>
-          </AlertDialog>
-        );
+                return (
+                    <AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="size-8 p-0">
+                                    <span className="sr-only">Open Menu</span>
+                                    <MoreHorizontal className="size-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <Link href={`/dashboard/contract/${contract._id}`} className="w-full">
+                                    <DropdownMenuItem className="cursor-pointer">
+                                        View Details
+                                    </DropdownMenuItem>
+                                </Link>
+                                <DropdownMenuSeparator />
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem 
+                                        className="cursor-pointer hover:text-destructive/20 text-destructive"
+                                        onSelect={(e) => e.preventDefault()}>
+                                        Delete Contract
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        
+                        <AlertDialogContent className="border border-gray-200 p-0 overflow-hidden">
+                            <AlertDialogHeader className="bg-gray-50 p-6 border-b border-gray-200">
+                                <AlertDialogTitle className="text-xl font-bold text-slate-800">
+                                    Are you absolutely sure?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="text-slate-600 mt-2">
+                                    This action cannot be undone. This will permanently delete your contract
+                                    and remove your data from our servers.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="p-4 bg-gray-50 border-gray-200">
+                                <AlertDialogCancel className="border-gray-200 text-gray-700 hover:bg-gray-50">
+                                    Cancel
+                                </AlertDialogCancel>
+                                <AlertDialogAction 
+                                    onClick={handleDeleteClick}
+                                    disabled={isDeleting}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    {isDeleting ? "Deleting..." : "Continue"}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                );
+            },
         },
-      },
     ];
 
     const table = useReactTable({
@@ -188,17 +231,39 @@ export default function UserContracts() {
 
     const totalContracts = contracts?.length || 0;
 
+    // Calculate average score handling both string and number types
     const averageScore = totalContracts > 0
-    ? (contracts?.reduce (
-        (sum, contract) => sum + (typeof contract.overallScore === "number" ? contract.overallScore : parseFloat(contract.overallScore ?? "0")),
-        0
-    ) ?? 0) / totalContracts
+    ? (contracts?.reduce((sum, contract) => {
+        let scoreValue: number;
+        
+        if (typeof contract.overallScore === "number") {
+            scoreValue = contract.overallScore;
+        } else if (typeof contract.overallScore === "string") {
+            scoreValue = parseFloat(contract.overallScore || "0");
+        } else {
+            scoreValue = 0;
+        }
+        
+        return sum + scoreValue;
+    }, 0) || 0) / totalContracts
     : 0;
 
     const highRiskContracts = 
     contracts?.filter((contract) => 
-        contract.risks.some((risk) => risk.severity === "high")
+        contract.risks?.some((risk) => risk.severity === "high")
     ).length ?? 0;
+
+    // Display error message if there's an error fetching data
+    if (error) {
+        return (
+            <div className="p-8 text-center">
+                <div className="text-red-500 mb-4">Error loading contracts</div>
+                <Button onClick={() => refetch()} className="bg-blue-600 text-white">
+                    Try again
+                </Button>
+            </div>
+        );
+    }
 
     return ( 
       <div className="bg-white w-full">
@@ -220,8 +285,6 @@ export default function UserContracts() {
                 <div>
                   <div className="text-3xl font-bold flex items-center gap-2">
                     {totalContracts} 
-                    <div className="flex items-center text-green-500 text-sm font-normal">
-                    </div>
                   </div>
                   <div className="text-gray-500">Total Contracts</div>
                 </div>
@@ -237,8 +300,6 @@ export default function UserContracts() {
                 <div>
                   <div className="text-3xl font-bold flex items-center gap-2">
                     {averageScore.toFixed(2)}
-                    <div className="flex items-center text-red-500 text-sm font-normal">
-                    </div>
                   </div>
                   <div className="text-gray-500">Average Score</div>
                 </div>
@@ -254,10 +315,8 @@ export default function UserContracts() {
                 <div>
                   <div className="text-3xl font-bold flex items-center gap-2">
                     {highRiskContracts}
-                    <div className="flex items-center text-green-500 text-sm font-normal">
-                    </div>
                   </div>
-                  <div className="text-gray-500">High Risk Contractors</div>
+                  <div className="text-gray-500">High Risk Contracts</div>
                 </div>
               </CardContent>
             </Card>
@@ -303,7 +362,16 @@ export default function UserContracts() {
                 ))}
               </TableHeader>
               <TableBody>
-                {table.getRowModel().rows?.length ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      <div className="flex justify-center items-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                        <span className="ml-2">Loading...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
@@ -323,7 +391,7 @@ export default function UserContracts() {
                       colSpan={columns.length}
                       className="h-24 text-center text-gray-500"
                     >
-                      No Results.    
+                      No contracts found. {error ? "Error: " + String(error) : ""}
                     </TableCell>
                   </TableRow>
                 )}
@@ -363,9 +431,4 @@ export default function UserContracts() {
         </div>
       </div>
     );
-}
-
-async function fetchUserContracts() : Promise<ContractAnalysis[]> {
-    const response = await api.get("/contracts/user-contracts");
-    return response.data;
 }

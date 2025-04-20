@@ -14,7 +14,7 @@ import "./config/passport";
 import authRoute from "./routes/auth";
 import contractsRoute from "./routes/contracts";
 import paymentsRoute from "./routes/payments";
-import userRoutes from "./routes/user.routes"; // Import the user routes
+import userRoutes from "./routes/user.routes";
 import { handleWebHook } from "./controllers/payment.controller";
 
 const app = express();

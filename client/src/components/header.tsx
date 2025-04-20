@@ -9,15 +9,15 @@ import { motion } from "framer-motion"
 const navItems: { name: string; href: string }[] = [
   { name: "Dashboard", href: "/dashboard" },
   { name: "Pricing", href: "/pricing" },
-  { name: "Privacy policy", href: "/privacy" },
+  { name: "Privacy policy", href: "/privacy-policy" },
 ]
 
 export default function Header() {
   const pathname = usePathname()
   const isHomePage = pathname === "/"
-
+  
   return (
-    <header className="sticky px-4 top-0 w-full border-b border-slate-200 bg-white shadow-sm z-10">
+    <header className="sticky px-4 top-0 w-full border-b border-slate-200 bg-white shadow-sm z-50">
       <div className="flex h-16 items-center justify-between max-w-6xl mx-auto">
         <div className="flex items-center">
           <Link
@@ -26,7 +26,7 @@ export default function Header() {
           >
             <span className="text-lg font-bold text-blue-600">Logo</span>
           </Link>
-
+          
           {isHomePage && (
             <nav className="hidden md:flex items-center space-x-8 text-sm font-medium">
               {navItems.map((item) => (
@@ -47,7 +47,7 @@ export default function Header() {
             </nav>
           )}
         </div>
-
+        
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
           <UserButton />
         </motion.div>

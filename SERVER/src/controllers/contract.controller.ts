@@ -262,3 +262,50 @@ export const getContractByID = async (req: Request, res: Response) => {
         res.status(500).json({ error: "Failed to get contract" });
     }
 };
+
+// Add delete contract function
+export const deleteContract = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = req.user as IUser;
+
+    // Validate the contract ID format
+    if (!isvalidMongoId(id)) {
+        return res.status(400).json({ error: "Invalid contract ID format" });
+    }
+
+    try {
+        // Find the contract to verify ownership
+        const contract = await ContractAnalysisSchema.findOne({
+            _id: id,
+            userId: user._id,
+        });
+
+        if (!contract) {
+            return res.status(404).json({ error: "Contract not found or you don't have permission to delete it" });
+        }
+
+        // Delete the contract from the database
+        const deleteResult = await ContractAnalysisSchema.deleteOne({ _id: id });
+        
+        if (deleteResult.deletedCount === 0) {
+            return res.status(500).json({ error: "Failed to delete contract" });
+        }
+
+        // Clear the cache for this contract
+        const cacheKey = `contract:${id}`;
+        await redis.del(cacheKey);
+        console.log("Contract cache cleared for:", id);
+
+        // Return success response
+        return res.status(200).json({ 
+            success: true, 
+            message: "Contract deleted successfully" 
+        });
+    } catch (error) {
+        console.error("Error deleting contract:", error);
+        return res.status(500).json({ 
+            error: "Failed to delete contract",
+            message: error instanceof Error ? error.message : "Unknown error"
+        });
+    }
+};
