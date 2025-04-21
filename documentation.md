@@ -19,7 +19,7 @@ This project is a Contract Analysis application that utilizes AI to analyze cont
 
 ## Technology Stack
 
-- **Frontend**: React.js
+- **Frontend**: Next.js
 - **Backend**: Node.js
 - **Database**: Redis (via Upstash)
 - **Authentication**: Google OAuth
